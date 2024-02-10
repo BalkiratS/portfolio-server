@@ -6,22 +6,20 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const authMiddleware = require('../middleware/authenticate');
 const Resume_model = require('../model/resume_model');
-require('dotenv/config')
+const getSecret = require('../secrets');
 
 const {PutObjectCommand, DeleteObjectCommand, S3Client} = require('@aws-sdk/client-s3');
 
-const client = new S3Client({
-    region: 'us-west-2',
-    credentials: {
-        accessKeyId:process.env.AWS_ACCESS_KEY_ID,              
-        secretAccessKey:process.env.AWS_ACCESS_KEY_SECRET
-    }
-})
+const client = new S3Client();
 
 const upload_resume = async (file) => {
 
+    const secretValue = await getSecret("pserver/bucket-name");
+
+    const bucket = secretValue.AWS_BUCKET_NAME;
+
     const command = new PutObjectCommand({
-        Bucket:process.env.AWS_BUCKET_NAME,
+        Bucket:bucket,
         Key: file.originalname,
         Body:file.buffer,   
         ACL:"public-read",         
@@ -30,7 +28,7 @@ const upload_resume = async (file) => {
 
       try {
         await client.send(command);
-        const url = `https://${process.env.AWS_BUCKET_NAME}.s3.us-west-2.amazonaws.com/${encodeURIComponent(file.originalname)}`
+        const url = `https://${bucket}.s3.us-west-2.amazonaws.com/${encodeURIComponent(file.originalname)}`
         return {key: file.originalname,
                 url: url}
       } catch (err) {
@@ -80,10 +78,15 @@ router.post('/upload', authMiddleware,  upload.single('resume'),  async function
     try {
         const result = await Resume_model.findOneAndReplace({}, resumeData, { upsert: true, new: true });
 
+        const secretValue = await getSecret("pserver/bucket-name");
+
+        const bucket = secretValue.AWS_BUCKET_NAME;
+
+
         // delete old resume from the S3
         if (oldResumeKey != null){
             const command = new DeleteObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME,
+            Bucket: bucket,
             Key: resume_key,
           });
 

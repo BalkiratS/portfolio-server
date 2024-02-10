@@ -3,7 +3,7 @@ var mongoose = require('mongoose')
 var router = express.Router();
 const Project_Model = require('../model/project_model');
 const authMiddleware = require('../middleware/authenticate');
-require('dotenv/config')
+
 
 /* Get all the Projects */
 router.get('/', async function(req, res)  {

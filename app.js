@@ -10,21 +10,30 @@ var cors = require('cors')
 
 require('dotenv').config();
 
-const mongostring = process.env.DATABASE_URL;
+const getSecret = require('./secrets');
 
+// Access a specific secret
+(async () => {
+  try {
+    const secretValue = await getSecret("pserver/MDB");
+    const mongostring = secretValue.DATABASE_URL;
 
-mongoose.connect(mongostring);
-const database = mongoose.connection;
+    mongoose.connect(mongostring);
+    const database = mongoose.connection;
 
-// Connect to database
-database.on('error', (error) => {
-  console.log(error)
-})
+    // Connect to database
+    database.on('error', (error) => {
+      console.log(error)
+    })
 
-database.once('connected', () => {
-  console.log('Database connected')
-})
+    database.once('connected', () => {
+      console.log('Database connected')
+    })
 
+  } catch (error) {
+    console.error(`Error accessing secret: ${error}`);
+  }
+})();
 
 var indexRouter = require('./routes/index');
 var skillsRouter = require('./routes/skills');

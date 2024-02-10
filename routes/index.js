@@ -2,14 +2,8 @@ var express = require('express');
 var router = express.Router();
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
+const getSecret = require('../secrets')
 
-require('dotenv').config();
-
-const secretKey = process.env.SECRET_KEY;
-const saltRounds = parseInt(process.env.SALT_ROUNDS, 10);
-
-const storedUsername = process.env.USERNAME;
-const storedPasswordHash = bcrypt.hashSync(process.env.PASSWORD, saltRounds);
 
 
 /* GET home page. */
@@ -18,16 +12,30 @@ router.get('/', function(req, res, next) {
 });
 
 // Login endpoint
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  // Compare input credentials with stored credentials
-  if (username === storedUsername && bcrypt.compareSync(password, storedPasswordHash)) {
-      const token = jwt.sign({ username }, secretKey);
-      res.json({ token });
-  } else {
-      res.status(401).json({ message: 'Unauthorized' });
-  }
-});
+  // Get stored credentials
+    try {
+      const secretValue = await getSecret("pserver/admin-creds");
+      const secretValue2 = await getSecret("pserver/secret-key");
+
+      const storedUsername = secretValue.USERNAME;
+      const storedPasswordHash =  secretValue.PASSWORD;
+      const secretKey = secretValue2.SECRET_KEY;
+      // Compare input credentials with stored credentials
+      if (username === storedUsername && bcrypt.compareSync(password, storedPasswordHash)) {
+          const token = jwt.sign({ username }, secretKey);
+          res.json({ token });
+      } else {
+          res.status(401).json({ message: 'Unauthorized' });
+      }
+  
+    } catch (error) {
+      console.error(`Error accessing secret: ${error}`);
+    }
+
+  });
+  
 
 module.exports = router;

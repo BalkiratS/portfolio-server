@@ -1,16 +1,7 @@
 var express = require('express')
 var router = express.Router()
 var nodemailer = require('nodemailer')
-require('dotenv/config')
-
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, 
-    },
-  });
-  
+var getSecret = require('../secrets')
 
 
 // get message from the form
@@ -20,9 +11,23 @@ router.post('/', async function(req, res) {
     
     // Send email notification
   try {
+
+    const secretValue = await getSecret("pserver/email");
+
+    const emailUser = secretValue.EMAIL_USER;
+    const emailPass =  secretValue.EMAIL_PASS;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: emailUser,
+        pass: emailPass, 
+      },
+    });
+
     const mailOptions = {
-      from: process.env.EMAIL_USER, 
-      to: process.env.EMAIL_USER,
+      from: emailUser, 
+      to: emailUser,
       subject: 'New Message from Contact Form',
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     };

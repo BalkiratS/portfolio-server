@@ -6,24 +6,21 @@ const multer = require('multer');
 const storage = multer.memoryStorage(); 
 const upload = multer({ storage });
 const authMiddleware = require('../middleware/authenticate');
-
-require('dotenv/config')
+var getSecret = require('../secrets')
 
 const {PutObjectCommand, DeleteObjectCommand, S3Client} = require('@aws-sdk/client-s3')
 
 
-const client = new S3Client({
-    region: 'us-west-2',
-    credentials: {
-        accessKeyId:process.env.AWS_ACCESS_KEY_ID,              
-        secretAccessKey:process.env.AWS_ACCESS_KEY_SECRET
-    }
-})
+const client = new S3Client();
 
 const upload_logo = async (file) => {
 
+    const secretValue = await getSecret("pserver/bucket-name");
+
+    const bucket = secretValue.AWS_BUCKET_NAME;
+
     const command = new PutObjectCommand({
-        Bucket:process.env.AWS_BUCKET_NAME,
+        Bucket:bucket,
         Key: file.originalname,
         Body:file.buffer,   
         ACL:"public-read",         
@@ -32,7 +29,7 @@ const upload_logo = async (file) => {
 
       try {
         await client.send(command);
-        const url = `https://${process.env.AWS_BUCKET_NAME}.s3.us-west-2.amazonaws.com/${encodeURIComponent(file.originalname)}`
+        const url = `https://${bucket}.s3.us-west-2.amazonaws.com/${encodeURIComponent(file.originalname)}`
         return {key: file.originalname,
                 url: url}
       } catch (err) {
@@ -119,9 +116,13 @@ router.delete('/auth/delete/:name', authMiddleware, async function(req, res) {
         const data = await Skill_modal.find(query);
         console.log(data)
         const logo_key = data[0].logo.key;
+
+        const secretValue = await getSecret("pserver/bucket-name");
+
+        const bucket = secretValue.AWS_BUCKET_NAME;
         
         const command = new DeleteObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME,
+            Bucket: bucket,
             Key: logo_key,
           });
         
