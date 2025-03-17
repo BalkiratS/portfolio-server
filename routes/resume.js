@@ -9,15 +9,13 @@ const Resume_model = require('../model/resume_model');
 const getSecret = require('../secrets');
 
 const {PutObjectCommand, DeleteObjectCommand, S3Client} = require('@aws-sdk/client-s3');
+const { fromEnv } = require("@aws-sdk/credential-providers");
 
 const initializeS3Client = async () => {
     const s3Creds = await getSecret("pserver/s3-creds");
     return new S3Client({
         region: 'us-west-2',
-        credentials: {
-            accessKeyId: s3Creds.AWS_ACCESS_KEY_ID,
-            secretAccessKey: s3Creds.AWS_SECRET_ACCESS_KEY,
-        },
+        credentials: fromEnv(),
     });
 };
 
