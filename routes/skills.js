@@ -3,17 +3,26 @@ var mongoose = require('mongoose');
 var router = express.Router();
 const Skill_modal = require('../model/skill_model');
 const multer = require('multer');
-const storage = multer.memoryStorage(); 
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const authMiddleware = require('../middleware/authenticate');
 var getSecret = require('../secrets')
 
 const {PutObjectCommand, DeleteObjectCommand, S3Client} = require('@aws-sdk/client-s3')
 
-
-const client = new S3Client();
+const initializeS3Client = async () => {
+    const s3Creds = await getSecret("pserver/s3-creds");
+    return new S3Client({
+        region: 'us-west-2',
+        credentials: {
+            accessKeyId: s3Creds.AWS_ACCESS_KEY_ID,
+            secretAccessKey: s3Creds.AWS_SECRET_ACCESS_KEY,
+        },
+    });
+};
 
 const upload_logo = async (file) => {
+    const client = await initializeS3Client();
 
     const secretValue = await getSecret("pserver/bucket-name");
 
@@ -22,9 +31,9 @@ const upload_logo = async (file) => {
     const command = new PutObjectCommand({
         Bucket:bucket,
         Key: file.originalname,
-        Body:file.buffer,   
-        ACL:"public-read",         
-        ContentType:file.mimetype 
+        Body:file.buffer,
+        ACL:"public-read",
+        ContentType:file.mimetype
       });
 
       try {
@@ -75,7 +84,7 @@ router.get('/auth/get/:name', authMiddleware, async function(req, res) {
 
 //  Add a new skill
 router.post('/auth/add', authMiddleware, upload.single('logo'), async function(req, res) {
-    
+
     if (!(req.body.name).length){
         return res.status(400).json({message: 'No name entered'})
     }
@@ -85,7 +94,7 @@ router.post('/auth/add', authMiddleware, upload.single('logo'), async function(r
     if (req.file) {
      logoData = await upload_logo(req.file)
     }
-    
+
     const skill_data = new Skill_modal({
         name: req.body.name,
         projects: JSON.parse(req.body.projects),
@@ -116,16 +125,17 @@ router.delete('/auth/delete/:name', authMiddleware, async function(req, res) {
         const data = await Skill_modal.find(query);
         console.log(data)
         const logo_key = data[0].logo.key;
+        const client = await initializeS3Client();
 
         const secretValue = await getSecret("pserver/bucket-name");
 
         const bucket = secretValue.AWS_BUCKET_NAME;
-        
+
         const command = new DeleteObjectCommand({
             Bucket: bucket,
             Key: logo_key,
           });
-        
+
           try {
             const response = await client.send(command);
           } catch (err) {
