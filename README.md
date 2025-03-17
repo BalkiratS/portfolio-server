@@ -6,14 +6,14 @@ This repository contains the backend API code for my personal portfolio website.
 ## Technologies
 - Backend: Node.js, Express, MongoDB
 - Frontend (separate repository): React, HTML, CSS, JavaScript
-- Deployment: AWS EC2
+- Deployment: Vercel
 - Authentication: JWT tokens
 
  ## Features
  - RESTful API for CRUD operations on resume, skills, and project data
  - Secure auth middleware using JWT tokens for admin access only
  - Integration with React frontend for data transfer and updates
- - Deployment on AWS
+ - Deployment on Vercel
 
 ## Getting Started:
 1. Clone this repository.
